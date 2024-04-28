@@ -39,6 +39,8 @@ RUN groupadd -g ${GID} ${GROUP_NAME} \
 USER ${USER_NAME}
 WORKDIR ${APPLICATION_DIRECTORY}
 
+RUN ls -a
+
 # If ${RUN_POETRY_INSTALL_AT_BUILD_TIME} = "true", install Python package by Poetry and move .venv under ${HOME}.
 # This process is for CI (GitHub Actions). To prevent overwrite by volume of docker compose, .venv is moved under ${HOME}.
 COPY --chown=${UID}:${GID} pyproject.toml poetry.lock poetry.toml .
