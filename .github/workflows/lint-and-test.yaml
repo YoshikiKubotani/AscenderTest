@@ -82,19 +82,19 @@ jobs:
         run: echo "$HASHED_FILES"
 
       - name: print root build cache directory contents
-        run: cd /tmp/.buildx-cache && pwd
+        run: cd /tmp/.buildx-cache && pwd && ls -a
         continue-on-error: true
 
       - name: print build cache directory contents
-        run: cd /tmp/.buildx-cache/${{ matrix.python-version }} && pwd
+        run: cd /tmp/.buildx-cache/${{ matrix.python-version }} && pwd && ls -a
         continue-on-error: true
 
       - name: print root registry cache directory contents
-        run: cd /tmp/docker-registry && pwd
+        run: cd /tmp/docker-registry && pwd && ls -a
         continue-on-error: true
       
       - name: print registry cache directory contents
-        run: cd /tmp/docker-registry/${{ matrix.python-version }} && pwd
+        run: cd /tmp/docker-registry/${{ matrix.python-version }} && pwd && ls -a
         continue-on-error: true
       
       # ビルドキャッシュ用のキャッシュを作成
@@ -123,6 +123,22 @@ jobs:
           #   docker-registry-${{ github.ref }}
           #   docker-registry-
         
+      - name: print root build cache directory contents
+        run: cd /tmp/.buildx-cache && pwd && ls -a
+        continue-on-error: true
+
+      - name: print build cache directory contents
+        run: cd /tmp/.buildx-cache/${{ matrix.python-version }} && pwd && ls -a
+        continue-on-error: true
+
+      - name: print root registry cache directory contents
+        run: cd /tmp/docker-registry && pwd && ls -a
+        continue-on-error: true
+      
+      - name: print registry cache directory contents
+        run: cd /tmp/docker-registry/${{ matrix.python-version }} && pwd && ls -a
+        continue-on-error: true
+      
       # OCI Distribution Spec規格のRegistryを実装した公式imageを使って、ローカルにRegistryを作成する
       - name: Boot-up local Docker registry
         if: ${{ env.USE_CACHE == 'true' }}
@@ -202,17 +218,17 @@ jobs:
           mv /tmp/.buildx-cache-new /tmp/.buildx-cache
 
       - name: print root build cache directory contents
-        run: cd /tmp/.buildx-cache && pwd
+        run: cd /tmp/.buildx-cache && pwd && ls -a
         continue-on-error: true
 
       - name: print build cache directory contents
-        run: cd /tmp/.buildx-cache/${{ matrix.python-version }} && pwd
+        run: cd /tmp/.buildx-cache/${{ matrix.python-version }} && pwd && ls -a
         continue-on-error: true
 
       - name: print root registry cache directory contents
-        run: cd /tmp/docker-registry && pwd
+        run: cd /tmp/docker-registry && pwd && ls -a
         continue-on-error: true
       
       - name: print registry cache directory contents
-        run: cd /tmp/docker-registry/${{ matrix.python-version }} && pwd
+        run: cd /tmp/docker-registry/${{ matrix.python-version }} && pwd && ls -a
         continue-on-error: true
