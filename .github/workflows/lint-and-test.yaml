@@ -1,8 +1,5 @@
-name: tests
-on:
-  pull_request:
-    types:
-      - closed
+name: lint-and-test
+on: [pull_request]
 
 env:
   DOCKER_FILE_DIRECTORY: environments
@@ -67,19 +64,13 @@ jobs:
       #       docker-registry-
 
       - name: echo hash of Dockerfile
-        env: 
-          HASHED_FILES: ${{ hashFiles('environments/Dockerfile') }}$
-        run: echo "$HASHED_FILES"
+        run: echo "Dockerfile hash is ${{ hashFiles('environments/Dockerfile') }}$"
 
       - name: echo hash of docker-compose.yaml
-        env: 
-          HASHED_FILES: ${{ hashFiles('environments/ci/docker-compose.yaml') }}$
-        run: echo "$HASHED_FILES"
+        run: echo "docker-compose.yaml hash is ${{ hashFiles('environments/ci/docker-compose.yaml') }}$"
       
       - name: echo hash of both
-        env: 
-          HASHED_FILES: ${{ hashFiles('environments/Dockerfile', 'environments/ci/docker-compose.yaml') }}$
-        run: echo "$HASHED_FILES"
+        run: echo "Both hash is ${{ hashFiles('environments/Dockerfile', 'environments/ci/docker-compose.yaml') }}$"
 
       - name: print root build cache directory contents
         run: cd /tmp/.buildx-cache && pwd && ls -a
