@@ -66,11 +66,26 @@ jobs:
       #       docker-registry-${{ github.ref }}
       #       docker-registry-
 
-      # ログ
-      - name: echo hash
+      - name: echo hash of Dockerfile
         env: 
-          HASHED_FILES: hashFiles('environments/Dockerfile', 'environments/ci/docker-compose.yaml')
+          HASHED_FILES: ${{ hashFiles('environments/Dockerfile') }}$
         run: echo "$HASHED_FILES"
+
+      - name: echo hash of docker-compose.yaml
+        env: 
+          HASHED_FILES: ${{ hashFiles('environments/docker-compose.yaml') }}$
+        run: echo "$HASHED_FILES"
+      
+      - name: echo hash of both
+        env: 
+          HASHED_FILES: ${{ hashFiles('environments/Dockerfile', 'environments/ci/docker-compose.yaml') }}$
+        run: echo "$HASHED_FILES"
+
+      - name: print build cache directory contents
+        run: cd /tmp/.buildx-cache/${{ matrix.python-version }} && pwd
+
+      - name: print registry cache directory contents
+        run: cd /tmp/docker-registry/${{ matrix.python-version }} && pwd
       
       # ビルドキャッシュ用のキャッシュを作成
       # Pythonのバージョンによって異なるpathをキャッシュする
