@@ -40,32 +40,64 @@ jobs:
         with:
           driver-opts: network=host
 
+      # # ビルドキャッシュ用のキャッシュを作成
+      # # Pythonのバージョンによって異なるpathをキャッシュする
+      # # ワークフローをトリガしたブランチ(ref)やコミット(sha)によって異なるkeyを作成
+      # - name: Cache Docker layers
+      #   if: ${{ env.USE_CACHE == 'true' }}
+      #   uses: actions/cache@v4
+      #   with:
+      #     path: /tmp/.buildx-cache/${{ matrix.python-version }}
+      #     key: buildx-${{ github.ref }}-${{ github.sha }}
+      #     restore-keys: |
+      #       buildx-${{ github.ref }}
+      #       buildx-
+
+      # # Docker Registry用のキャッシュを作成
+      # # Pythonのバージョンによって異なるpathをキャッシュする
+      # # ワークフローをトリガしたブランチ(ref)やコミット(sha)によって異なるkeyを作成
+      # - name: Cache Docker registry
+      #   if: ${{ env.USE_CACHE == 'true' }}
+      #   uses: actions/cache@v4
+      #   with:
+      #     path: /tmp/docker-registry/${{ matrix.python-version }}
+      #     key: docker-registry-${{ github.ref }}-${{ github.sha }}
+      #     restore-keys: |
+      #       docker-registry-${{ github.ref }}
+      #       docker-registry-
+
+      # ログ
+      - name: echo hash
+        env: 
+          HASHED_FILES: hashFiles('environments/Dockerfile', 'environments/ci/docker-compose.yaml')
+        run: echo "$HASHED_FILES"
+      
       # ビルドキャッシュ用のキャッシュを作成
       # Pythonのバージョンによって異なるpathをキャッシュする
-      # ooやxxによって異なるkeyを作成
+      # ワークフローをトリガしたブランチ(ref)やコミット(sha)によって異なるkeyを作成
       - name: Cache Docker layers
         if: ${{ env.USE_CACHE == 'true' }}
         uses: actions/cache@v4
         with:
           path: /tmp/.buildx-cache/${{ matrix.python-version }}
-          key: buildx-${{ github.ref }}-${{ github.sha }}
+          key: buildx-${{ hashFiles('environments/Dockerfile', 'environments/ci/docker-compose.yaml') }}
           restore-keys: |
             buildx-${{ github.ref }}
             buildx-
 
       # Docker Registry用のキャッシュを作成
       # Pythonのバージョンによって異なるpathをキャッシュする
-      # ooやxxによって異なるkeyを作成
+      # ワークフローをトリガしたブランチ(ref)やコミット(sha)によって異なるkeyを作成
       - name: Cache Docker registry
         if: ${{ env.USE_CACHE == 'true' }}
         uses: actions/cache@v4
         with:
           path: /tmp/docker-registry/${{ matrix.python-version }}
-          key: docker-registry-${{ github.ref }}-${{ github.sha }}
+          key: docker-registry-${{ hashFiles('package-lock.json') }}
           restore-keys: |
             docker-registry-${{ github.ref }}
             docker-registry-
-            
+        
       # OCI Distribution Spec規格のRegistryを実装した公式imageを使って、ローカルにRegistryを作成する
       - name: Boot-up local Docker registry
         if: ${{ env.USE_CACHE == 'true' }}
