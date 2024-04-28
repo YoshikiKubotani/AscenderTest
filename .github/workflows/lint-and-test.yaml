@@ -142,7 +142,7 @@ jobs:
       # OCI Distribution Spec規格のRegistryを実装した公式imageを使って、ローカルにRegistryを作成する
       - name: Boot-up local Docker registry
         if: ${{ env.USE_CACHE == 'true' }}
-        run: docker run -d -p 5000:5000 --restart=always --name registry -v /tmp/docker-registry:/var/lib/registry registry:2
+        run: docker run -d -p 5000:5000 --restart=always --name registry -v /tmp/docker-registry/${{ matrix.python-version }}:/var/lib/registry registry:2
 
       # Registryが立ち上がるまで待機
       - name: Wait for Docker registry
