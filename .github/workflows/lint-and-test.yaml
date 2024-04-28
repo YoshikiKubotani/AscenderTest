@@ -73,7 +73,7 @@ jobs:
 
       - name: echo hash of docker-compose.yaml
         env: 
-          HASHED_FILES: ${{ hashFiles('environments/docker-compose.yaml') }}$
+          HASHED_FILES: ${{ hashFiles('environments/ci/docker-compose.yaml') }}$
         run: echo "$HASHED_FILES"
       
       - name: echo hash of both
@@ -83,15 +83,19 @@ jobs:
 
       - name: print root build cache directory contents
         run: cd /tmp/.buildx-cache && pwd
+        continue-on-error: true
 
       - name: print build cache directory contents
         run: cd /tmp/.buildx-cache/${{ matrix.python-version }} && pwd
+        continue-on-error: true
 
       - name: print root registry cache directory contents
         run: cd /tmp/docker-registry && pwd
+        continue-on-error: true
       
       - name: print registry cache directory contents
         run: cd /tmp/docker-registry/${{ matrix.python-version }} && pwd
+        continue-on-error: true
       
       # ビルドキャッシュ用のキャッシュを作成
       # Pythonのバージョンによって異なるpathをキャッシュする
@@ -196,3 +200,19 @@ jobs:
         run: |
           rm -rf /tmp/.buildx-cache
           mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+
+      - name: print root build cache directory contents
+        run: cd /tmp/.buildx-cache && pwd
+        continue-on-error: true
+
+      - name: print build cache directory contents
+        run: cd /tmp/.buildx-cache/${{ matrix.python-version }} && pwd
+        continue-on-error: true
+
+      - name: print root registry cache directory contents
+        run: cd /tmp/docker-registry && pwd
+        continue-on-error: true
+      
+      - name: print registry cache directory contents
+        run: cd /tmp/docker-registry/${{ matrix.python-version }} && pwd
+        continue-on-error: true
