@@ -81,9 +81,15 @@ jobs:
           HASHED_FILES: ${{ hashFiles('environments/Dockerfile', 'environments/ci/docker-compose.yaml') }}$
         run: echo "$HASHED_FILES"
 
+      - name: print root build cache directory contents
+        run: cd /tmp/.buildx-cache && pwd
+
       - name: print build cache directory contents
         run: cd /tmp/.buildx-cache/${{ matrix.python-version }} && pwd
 
+      - name: print root registry cache directory contents
+        run: cd /tmp/docker-registry && pwd
+      
       - name: print registry cache directory contents
         run: cd /tmp/docker-registry/${{ matrix.python-version }} && pwd
       
