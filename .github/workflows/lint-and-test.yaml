@@ -54,10 +54,11 @@ jobs:
         with:
           files: docker-compose.yaml
           workdir: ${{ env.DOCKER_COMPOSE_DIRECTORY }}
+          load: true
           set: |
             core.args.PYTHON_VERSION=${{ matrix.python-version }}
             *.cache-from=type=gha,scope=${{ matrix.python-version }}-cache
-            *.output=type=image,name=test-ci:test
+      #      *.output=type=image,name=test-ci:test
       #      *.cache-to=type=gha,scope==${{ matrix.python-version }}-cache,mode=max
 
       # buildxを使って、Registryがバインドマウントされているlocalフォルダのキャッシュからimageをビルド
