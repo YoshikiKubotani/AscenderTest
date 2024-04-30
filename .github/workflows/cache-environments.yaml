@@ -54,6 +54,7 @@ jobs:
       # ghaのscopeに関してはhttps://github.com/moby/buildkit/issues/2325#issuecomment-904077305を参照
       - name: Build docker image with cache
         # if: (steps.cache-buildx-cache.outputs.cache-hit != 'true' || steps.cache-docker-registry.outputs.cache-hit != 'true') && env.USE_CACHE == 'true'
+        if: env.USE_CACHE == 'true'
         uses: docker/bake-action@v4
         with:
           source: ${{ env.DOCKER_COMPOSE_DIRECTORY }}
