@@ -57,7 +57,7 @@ jobs:
           set: |
             core.args.PYTHON_VERSION=${{ matrix.python-version }}
             *.cache-from=type=gha,scope=${{ matrix.python-version }}-cache
-            *.output=type=image,name=test-ci
+            *.output=type=image,name=test-ci:test
       #      *.cache-to=type=gha,scope==${{ matrix.python-version }}-cache,mode=max
 
       # buildxを使って、Registryがバインドマウントされているlocalフォルダのキャッシュからimageをビルド
@@ -75,6 +75,8 @@ jobs:
       #    --push \
       #    -f docker-compose.yaml
       #  working-directory: ${{ env.DOCKER_COMPOSE_DIRECTORY }}
+      - name: Check local images availability
+        run: docker images
 
       - name: Build docker image if the cache is not used
         if: env.USE_CACHE != 'true'
