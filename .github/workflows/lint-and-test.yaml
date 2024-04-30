@@ -57,8 +57,8 @@ jobs:
           set: |
             core.args.PYTHON_VERSION=${{ matrix.python-version }}
             *.cache-from=type=gha,scope=${{ matrix.python-version }}-cache
-            *.cache-to=type=gha,scope==${{ matrix.python-version }}-cache,mode=max
             *.output=type=image,name=test-ci
+      #      *.cache-to=type=gha,scope==${{ matrix.python-version }}-cache,mode=max
 
       # buildxを使って、Registryがバインドマウントされているlocalフォルダのキャッシュからimageをビルド
       # ビルドされたimageは、上記で作成したRegistryに保存
@@ -82,7 +82,7 @@ jobs:
         working-directory: ${{ env.DOCKER_COMPOSE_DIRECTORY }}
 
       - name: Create and start docker container
-        run: docker compose up --no-build -d
+        run: docker compose up --no-build -d --pull never
         working-directory: ${{ env.DOCKER_COMPOSE_DIRECTORY }}
 
       # pytest-cov export coverage data to a file
