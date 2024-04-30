@@ -61,7 +61,7 @@ jobs:
           set: |
             core.args.PYTHON_VERSION=${{ matrix.python-version }}
             *.cache-from=type=gha,scope=${{ matrix.python-version }}-cache
-      #     *.cache-to=type=gha,scope==${{ matrix.python-version }}-cache,mode=max
+            *.cache-to=type=gha,scope==${{ matrix.python-version }}-cache,mode=max
       
       #     *.cache-from=type=local,src=/tmp/.buildx-cache/${{ matrix.python-version }}
       #     *.cache-to=type=local,dest=/tmp/.buildx-cache-new/${{ matrix.python-version }}
