@@ -52,8 +52,8 @@ jobs:
         if: env.USE_CACHE == 'true'
         uses: docker/bake-action@v4
         with:
-          source: ${{ env.DOCKER_COMPOSE_DIRECTORY }}
           files: docker-compose.yaml
+          workdir: ${{ env.DOCKER_COMPOSE_DIRECTORY }}
           set: |
             core.args.PYTHON_VERSION=${{ matrix.python-version }}
             *.cache-from=type=gha,scope=${{ matrix.python-version }}-cache
