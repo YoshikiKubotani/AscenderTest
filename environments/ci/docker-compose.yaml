@@ -10,6 +10,7 @@ services:
         - RUN_POETRY_INSTALL_AT_BUILD_TIME=true
         - PROJECT_NAME=${PROJECT_NAME_ENV}
       context: ../../
+      tags: test
       dockerfile: environments/Dockerfile
     tty: true
     volumes:
