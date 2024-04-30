@@ -1,4 +1,4 @@
-name: tests
+name: cache-environments
 on:
   pull_request:
     types:
@@ -60,15 +60,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: /tmp/docker-registry/${{ matrix.python-version }}
-          key: docker-registry--${{ hashFiles('environments/Dockerfile', 'environments/ci/docker-compose.yaml') }}
-        
-      - name: print hash of docker-related files(pattern1)
-        run: echo "hash is ${{ hashFiles(format('{0}/Dockerfile', env.DOCKER_FILE_DIRECTORY), format('{0}/docker-compose.yaml', env.DOCKER_COMPOSE_DIRECTORY)) }}"
-        continue-on-error: true
-
-      - name: print hash of docker-related files(pattern2)
-        run: echo "hash is ${{ hashFiles('${{env.DOCKER_FILE_DIRECTORY}}/Dockerfile', '${{env.DOCKER_COMPOSE_DIRECTORY}}/docker-compose.yaml') }}"
-        continue-on-error: true
+          key: docker-registry--${{ hashFiles(format('{0}/Dockerfile', env.DOCKER_FILE_DIRECTORY), format('{0}/docker-compose.yaml', env.DOCKER_COMPOSE_DIRECTORY)) }}
       
       # OCI Distribution Spec規格のRegistryを実装した公式imageを使って、ローカルにRegistryを作成する
       - name: Boot-up local Docker registry
@@ -114,19 +106,3 @@ jobs:
         run: |
           rm -rf /tmp/.buildx-cache
           mv /tmp/.buildx-cache-new /tmp/.buildx-cache
-
-      - name: print root build cache directory contents
-        run: cd /tmp/.buildx-cache && pwd && ls -a
-        continue-on-error: true
-
-      - name: print build cache directory contents
-        run: cd /tmp/.buildx-cache/${{ matrix.python-version }} && pwd && ls -a
-        continue-on-error: true
-
-      - name: print root registry cache directory contents
-        run: cd /tmp/docker-registry && pwd && ls -a
-        continue-on-error: true
-      
-      - name: print registry cache directory contents
-        run: cd /tmp/docker-registry/${{ matrix.python-version }} && pwd && ls -a
-        continue-on-error: true
