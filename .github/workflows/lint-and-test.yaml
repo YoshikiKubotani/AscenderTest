@@ -85,7 +85,7 @@ jobs:
         working-directory: ${{ env.DOCKER_COMPOSE_DIRECTORY }}
 
       - name: Create and start docker container
-        run: docker compose up --no-build -d --pull never
+        run: docker compose up --no-build -d #--pull never
         working-directory: ${{ env.DOCKER_COMPOSE_DIRECTORY }}
 
       # pytest-cov export coverage data to a file
