@@ -30,7 +30,7 @@ jobs:
 
       # BuildKitによるビルドが可能なDocker CLIの拡張であるbuildxを使ってbuilder instance（BuildKitにおいて実際にビルドを行う場所）を作成
       - name: Set up Docker Buildx
-        if: ${{ env.USE_CACHE == 'true' }}
+        if: env.USE_CACHE == 'true'
         id: buildx
         uses: docker/setup-buildx-action@v3
         with:
@@ -39,66 +39,45 @@ jobs:
       # ビルドキャッシュ用のキャッシュを作成
       # Pythonのバージョンによって異なるpathをキャッシュする
       # Dockerfileとdocker-compose.yamlの変更ごとに異なるkeyを作成
-      - name: Cache Docker layers
-        if: ${{ env.USE_CACHE == 'true' }}
-        uses: actions/cache@v4
+      #- name: Cache Docker layers
+      #  if: ${{ env.USE_CACHE == 'true' }}
+      #  uses: actions/cache@v4
+      #  with:
+      #    path: /tmp/.buildx-cache/${{ matrix.python-version }}
+      #    key: buildx-${{ hashFiles(format('{0}/Dockerfile', env.DOCKER_FILE_DIRECTORY), format('{0}/docker-compose.yaml', env.DOCKER_COMPOSE_DIRECTORY)) }}
+
+      # ghaのscopeに関してはhttps://github.com/moby/buildkit/issues/2325#issuecomment-904077305を参照
+      - name: Build docker image with cache
+        # if: (steps.cache-buildx-cache.outputs.cache-hit != 'true' || steps.cache-docker-registry.outputs.cache-hit != 'true') && env.USE_CACHE == 'true'
+        if: env.USE_CACHE == 'true'
+        uses: docker/bake-action@v4
         with:
-          path: /tmp/.buildx-cache/${{ matrix.python-version }}
-          key: buildx-${{ hashFiles(format('{0}/Dockerfile', env.DOCKER_FILE_DIRECTORY), format('{0}/docker-compose.yaml', env.DOCKER_COMPOSE_DIRECTORY)) }}
-
-      # Docker Registry用のキャッシュを作成
-      # Pythonのバージョンによって異なるpathをキャッシュする
-      # Dockerfileとdocker-compose.yamlの変更ごとに異なるkeyを作成
-      - name: Cache Docker registry
-        if: ${{ env.USE_CACHE == 'true' }}
-        uses: actions/cache@v4
-        with:
-          path: /tmp/docker-registry/${{ matrix.python-version }}
-          key: docker-registry--${{ hashFiles(format('{0}/Dockerfile', env.DOCKER_FILE_DIRECTORY), format('{0}/docker-compose.yaml', env.DOCKER_COMPOSE_DIRECTORY)) }}
-      
-      # OCI Distribution Spec規格のRegistryを実装した公式imageを使って、ローカルにRegistryを作成する
-      - name: Boot-up local Docker registry
-        if: ${{ env.USE_CACHE == 'true' }}
-        run: docker run -d -p 5000:5000 --restart=always --name registry -v /tmp/docker-registry/${{ matrix.python-version }}:/var/lib/registry registry:2
-
-      # Registryが立ち上がるまで待機
-      - name: Wait for Docker registry
-        if: ${{ env.USE_CACHE == 'true' }}
-        run: npx wait-on --httpTimeout 30000 tcp:5000
-
-      # Docker Imageに使用するタグを作成し、DOCKER_IMAGE_TAG_CIという名前で環境変数に保存
-      - name: Generate Docker image tag
-        run: |
-            SHA=${{ github.sha }}
-            TAG=$(TZ=UTC-9 date '+%Y%m')-${SHA:0:7}
-            echo "DOCKER_IMAGE_TAG_CI=$TAG" >> $GITHUB_ENV
-            echo TAG $TAG
-            echo "docker_image_tag_ci=$TAG" >> $GITHUB_OUTPUT
+          source: ${{ env.DOCKER_COMPOSE_DIRECTORY }}
+          files: docker-compose.yaml
+          set: |
+            core.args.PYTHON_VERSION=${{ matrix.python-version }}
+            *.cache-from=type=gha,scope=${{ matrix.python-version }}-cache
+            *.cache-to=type=gha,scope==${{ matrix.python-version }}-cache,mode=max
 
       # buildxを使って、Registryがバインドマウントされているlocalフォルダのキャッシュからimageをビルド
       # ビルドされたimageは、上記で作成したRegistryに保存
       # ビルドキャッシュは、上記で作成したビルドキャッシュ用のキャッシュディレクトリから取得して使用
       # 新しいビルドキャッシュは、一時的に`.buildx-cache-new`のほうに置いておく
-      - name: Build docker image with cache and push it to the local registry
-        if: ${{ env.USE_CACHE == 'true' }}
-        run: |
-          docker buildx bake \
-          --builder="${{ steps.buildx.outputs.name }}" \
-          --set="core.args.PYTHON_VERSION=${{ matrix.python-version }}" \
-          --set="*.cache-from=type=local,src=/tmp/.buildx-cache/${{ matrix.python-version }}" \
-          --set="*.cache-to=type=local,dest=/tmp/.buildx-cache-new/${{ matrix.python-version }}" \
-          --push \
-          -f docker-compose.yaml
-        working-directory: ${{ env.DOCKER_COMPOSE_DIRECTORY }}
+      #- name: Build docker image with cache and push it to the local registry
+      #  if: ${{ env.USE_CACHE == 'true' }}
+      #  run: |
+      #    docker buildx bake \
+      #    --builder="${{ steps.buildx.outputs.name }}" \
+      #    --set="core.args.PYTHON_VERSION=${{ matrix.python-version }}" \
+      #    --set="*.cache-from=type=local,src=/tmp/.buildx-cache/${{ matrix.python-version }}" \
+      #    --set="*.cache-to=type=local,dest=/tmp/.buildx-cache-new/${{ matrix.python-version }}" \
+      #    --push \
+      #    -f docker-compose.yaml
+      #  working-directory: ${{ env.DOCKER_COMPOSE_DIRECTORY }}
 
       - name: Build docker image if the cache is not used
-        if: ${{ env.USE_CACHE != 'true' }}
+        if: env.USE_CACHE != 'true'
         run: docker compose build --parallel --build-arg PYTHON_VERSION=${{ matrix.python-version }} core
-        working-directory: ${{ env.DOCKER_COMPOSE_DIRECTORY }}
-
-      - name: Pull Docker image from the local registry
-        if: ${{ env.USE_CACHE == 'true' }}
-        run: docker compose pull
         working-directory: ${{ env.DOCKER_COMPOSE_DIRECTORY }}
 
       - name: Create and start docker container
@@ -124,12 +103,3 @@ jobs:
       - name: Run test code
         run: docker compose exec -T core make test
         working-directory: ${{ env.DOCKER_COMPOSE_DIRECTORY }}
-
-        # Temp fix
-        # https://github.com/docker/build-push-action/issues/252
-        # https://github.com/moby/buildkit/issues/1896
-      - name: Move cache
-        if: ${{ env.USE_CACHE == 'true' }}
-        run: |
-          rm -rf /tmp/.buildx-cache
-          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
