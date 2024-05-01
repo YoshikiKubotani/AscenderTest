@@ -38,6 +38,7 @@ jobs:
       # Dockerfileとdocker-compose.yamlの変更ごとに異なるkeyを作成
       - name: Cache Docker layers
         if: env.USE_CACHE == 'true'
+        id: cache-buildx-cache
         uses: actions/cache@v4
         with:
           path: /tmp/.buildx-cache/${{ matrix.python-version }}
@@ -57,6 +58,9 @@ jobs:
             core.args.PYTHON_VERSION=${{ matrix.python-version }}
             *.cache-from=type=local,src=/tmp/.buildx-cache/${{ matrix.python-version }}
 
+      # ビルドキャッシュが無かった場合は、通常のdocker compose buildを使用する
+      # docker/bake-actionでも動作するが、cache-fromに指定したフォルダが作成されるため
+      # actions/cacheによってマージブランチに不必要なキャッシュが作成されてしまうのでこちらを使う
       - name: Build docker image if the cache is not used
         if: steps.cache-buildx-cache.outputs.cache-hit != 'true' || env.USE_CACHE != 'true'
         run: docker compose build --parallel --build-arg PYTHON_VERSION=${{ matrix.python-version }} core
