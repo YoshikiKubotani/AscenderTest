@@ -58,7 +58,7 @@ jobs:
             *.cache-from=type=local,src=/tmp/.buildx-cache/${{ matrix.python-version }}
 
       - name: Build docker image if the cache is not used
-        if: steps.cache-buildx-cache.outputs.cache-hit != 'true' or env.USE_CACHE != 'true'
+        if: steps.cache-buildx-cache.outputs.cache-hit != 'true' || env.USE_CACHE != 'true'
         run: docker compose build --parallel --build-arg PYTHON_VERSION=${{ matrix.python-version }} core
         working-directory: ${{ env.DOCKER_COMPOSE_DIRECTORY }}
 
