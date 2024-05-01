@@ -47,7 +47,7 @@ jobs:
       # ビルドキャッシュは、上記で作成したビルドキャッシュ用のキャッシュディレクトリから取得して使用
       # 新しいビルドキャッシュは、一時的に`.buildx-cache-new`のほうに置いておく
       - name: Build docker image with cache
-        if: env.USE_CACHE == 'true'
+        if: steps.cache-buildx-cache.outputs.cache-hit == 'true' && env.USE_CACHE == 'true'
         uses: docker/bake-action@v4
         with:
           files: docker-compose.yaml
@@ -57,11 +57,8 @@ jobs:
             core.args.PYTHON_VERSION=${{ matrix.python-version }}
             *.cache-from=type=local,src=/tmp/.buildx-cache/${{ matrix.python-version }}
 
-      - name: Check local images availability
-        run: docker images
-
       - name: Build docker image if the cache is not used
-        if: env.USE_CACHE != 'true'
+        if: steps.cache-buildx-cache.outputs.cache-hit != 'true' or env.USE_CACHE != 'true'
         run: docker compose build --parallel --build-arg PYTHON_VERSION=${{ matrix.python-version }} core
         working-directory: ${{ env.DOCKER_COMPOSE_DIRECTORY }}
 
