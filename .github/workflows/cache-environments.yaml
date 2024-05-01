@@ -51,7 +51,9 @@ jobs:
           path: /tmp/.buildx-cache/${{ matrix.python-version }}
           key: buildx-${{ hashFiles(format('{0}/Dockerfile', env.DOCKER_FILE_DIRECTORY), format('{0}/docker-compose.yaml', env.DOCKER_COMPOSE_DIRECTORY)) }}
 
-      # ghaのscopeに関してはhttps://github.com/moby/buildkit/issues/2325#issuecomment-904077305を参照
+      # buildxを使って、docker-compose.yamlファイルに定義されたサービスをビルド
+      # ビルドキャッシュは、上記で作成したビルドキャッシュ用のキャッシュディレクトリから取得して使用
+      # 新しいビルドキャッシュは、一時的に`.buildx-cache-new`のほうに置いておく
       - name: Build docker image with cache
         if: steps.cache-buildx-cache.outputs.cache-hit != 'true' && env.USE_CACHE == 'true'
         uses: docker/bake-action@v4
