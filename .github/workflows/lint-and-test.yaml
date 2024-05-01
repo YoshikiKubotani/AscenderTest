@@ -26,29 +26,26 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Check version info
-        run: pwd && docker-compose --version && docker --version
+        run: pwd && docker compose --version && docker --version
 
-      # BuildKitによるビルドが可能なDocker CLIの拡張であるbuildxを使ってbuilder instance（BuildKitにおいて実際にビルドを行う場所）を作成
+      # Provide a builder instance with docker buildx.
       - name: Set up Docker Buildx
         if: env.USE_CACHE == 'true'
         uses: docker/setup-buildx-action@v3
-      
-      # ビルドキャッシュ用のキャッシュを作成
-      # Pythonのバージョンによって異なるpathをキャッシュする
-      # Dockerfileとdocker-compose.yamlの変更ごとに異なるkeyを作成
+
+      # Specify a cache directory for build cache, and reuse past build cache as long as there are no changes to the environment files.
       - name: Cache Docker layers
         if: env.USE_CACHE == 'true'
-        id: cache-buildx-cache
+        id: build-cache
         uses: actions/cache@v4
         with:
           path: /tmp/.buildx-cache/${{ matrix.python-version }}
-          key: buildx-${{ hashFiles(format('{0}/Dockerfile', env.DOCKER_FILE_DIRECTORY), format('{0}/docker-compose.yaml', env.DOCKER_COMPOSE_DIRECTORY)) }}
+          key: buildx-${{ hashFiles(format('{0}/Dockerfile', env.DOCKER_FILE_DIRECTORY), format('{0}/docker-compose.yaml', env.DOCKER_COMPOSE_DIRECTORY), 'poetry.lock') }}
 
-      # buildxを使って、docker-compose.yamlファイルに定義されたサービスをビルド
-      # ビルドキャッシュは、上記で作成したビルドキャッシュ用のキャッシュディレクトリから取得して使用
-      # 新しいビルドキャッシュは、一時的に`.buildx-cache-new`のほうに置いておく
-      - name: Build docker image with cache
-        if: steps.cache-buildx-cache.outputs.cache-hit == 'true' && env.USE_CACHE == 'true'
+      # If build cache is found, use it to build the Docker image.
+      # The build is carried out using the `bake` command from buildx, referencing the `docker-compose.yaml` for CI.
+      - name: Build docker image with cache using buildx
+        if: steps.build-cache.outputs.cache-hit == 'true' && env.USE_CACHE == 'true'
         uses: docker/bake-action@v4
         with:
           files: docker-compose.yaml
@@ -58,11 +55,12 @@ jobs:
             core.args.PYTHON_VERSION=${{ matrix.python-version }}
             *.cache-from=type=local,src=/tmp/.buildx-cache/${{ matrix.python-version }}
 
-      # ビルドキャッシュが無かった場合は、通常のdocker compose buildを使用する
-      # docker/bake-actionでも動作するが、cache-fromに指定したフォルダが作成されるため
-      # actions/cacheによってマージブランチに不必要なキャッシュが作成されてしまうのでこちらを使う
-      - name: Build docker image if the cache is not used
-        if: steps.cache-buildx-cache.outputs.cache-hit != 'true' || env.USE_CACHE != 'true'
+      # If build cache is not found, build the Docker image without cache.
+      # It also works with docker/bake-action, but the `bake` command creates `/tmp/.buildx-cache/${{ matrix.python-version }}` as specified in cache-from.
+      # Since it is a cache directory tracked by actions/cache, if the directory exists at the end of the workflow, unnecessary cache is created in the merge branch.
+      # We used the regular build command to avoid this problem.
+      - name: Build docker image without cache using normal build
+        if: steps.build-cache.outputs.cache-hit != 'true' || env.USE_CACHE != 'true'
         run: docker compose build --parallel --build-arg PYTHON_VERSION=${{ matrix.python-version }} core
         working-directory: ${{ env.DOCKER_COMPOSE_DIRECTORY }}
 
