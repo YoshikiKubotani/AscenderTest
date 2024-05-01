@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   core:
-    image: ci
+    image: ci-test
     build:
       args:
         - BASE_IMAGE=ubuntu:20.04
