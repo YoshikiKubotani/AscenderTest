@@ -1,4 +1,4 @@
-name: cache-environments
+name: cache
 on:
   pull_request:
     types:
@@ -12,7 +12,7 @@ env:
   USE_CACHE: true
 
 jobs:
-  cache-image-builds:
+  create-cache:
     if: github.event.pull_request.merged == true
     name: ${{ matrix.os }} / ${{ matrix.python-version }}
     runs-on: ${{ matrix.image }}
@@ -32,30 +32,23 @@ jobs:
       - name: Check version info
         run: pwd && docker-compose --version && docker --version
 
-      # BuildKitによるビルドが可能なDocker CLIの拡張であるbuildxを使ってbuilder instance（BuildKitにおいて実際にビルドを行う場所）を作成
+      # Provide a builder instance with docker buildx.
       - name: Set up Docker Buildx
         if: env.USE_CACHE == 'true'
-        id: buildx
         uses: docker/setup-buildx-action@v3
-        with:
-          driver-opts: network=host
-      
-      # ビルドキャッシュ用のキャッシュを作成
-      # Pythonのバージョンによって異なるpathをキャッシュする
-      # Dockerfileとdocker-compose.yamlの変更ごとに異なるkeyを作成
+
+      # Specify a cache directory for build cache, and reuse past build cache as long as there are no changes to the environment files.
       - name: Cache Docker layers
         if: env.USE_CACHE == 'true'
-        id: cache-buildx-cache
+        id: build-cache
         uses: actions/cache@v4
         with:
           path: /tmp/.buildx-cache/${{ matrix.python-version }}
-          key: buildx-${{ hashFiles(format('{0}/Dockerfile', env.DOCKER_FILE_DIRECTORY), format('{0}/docker-compose.yaml', env.DOCKER_COMPOSE_DIRECTORY)) }}
+          key: buildx-${{ hashFiles(format('{0}/Dockerfile', env.DOCKER_FILE_DIRECTORY), format('{0}/docker-compose.yaml', env.DOCKER_COMPOSE_DIRECTORY), 'poetry.lock') }}
 
-      # buildxを使って、docker-compose.yamlファイルに定義されたサービスをビルド
-      # ビルドキャッシュは、上記で作成したビルドキャッシュ用のキャッシュディレクトリから取得して使用
-      # 新しいビルドキャッシュは、一時的に`.buildx-cache-new`のほうに置いておく
-      - name: Build docker image with cache
-        if: steps.cache-buildx-cache.outputs.cache-hit != 'true' && env.USE_CACHE == 'true'
+      # If build cache is not found, build the Docker image to create a new cache.
+      - name: Build docker image with cache using buildx
+        if: steps.build-cache.outputs.cache-hit != 'true' && env.USE_CACHE == 'true'
         uses: docker/bake-action@v4
         with:
           files: docker-compose.yaml
@@ -70,7 +63,7 @@ jobs:
       # https://github.com/docker/build-push-action/issues/252
       # https://github.com/moby/buildkit/issues/1896
       - name: Move cache
-        if: steps.cache-buildx-cache.outputs.cache-hit != 'true' && env.USE_CACHE == 'true'
+        if: steps.build-cache.outputs.cache-hit != 'true' && env.USE_CACHE == 'true'
         run: |
           rm -rf /tmp/.buildx-cache
           mv /tmp/.buildx-cache-new /tmp/.buildx-cache
